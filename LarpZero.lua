@@ -15226,12 +15226,13 @@ RightTab = ClassTab:AddRightTabbox("Right Tabbox")
 
 CreateToggles({
     { "GeneralClassBuffToggle", Text = "General class buffs", Tooltip = "Gives you Dual Wielders and Guardians buff", Tab = FirstTab },
+    { "AttackBuffOnlyToggle", Text = "Attack buff only", Tooltip = "Only the Dual Wielder attack buff from General class buffs, fired every second\nUse this to test which general buff actually helps", Tab = FirstTab },
+    { "AggroDrawOnlyToggle", Text = "Aggro draw only", Tooltip = "Only the Guardian aggro draw from General class buffs, fired every second\nUse this to test which general buff actually helps", Tab = FirstTab },
     { "MoLBarrierToggle", Text = "MoL barrier", Tooltip = "Gives everyone else in the game a barrier instead of only yourself\nTries to work on any class", Tab = SecondTab },
     { "DemonBloodBindingToggle", Text = "Demon Blood Binding", Tooltip = "Activates Demons Blood Binding skill that takes away health while boosting your own damage\nTries to work on any class", Tab = SecondTab },
     { "StormcallerSuperchargeToggle", Text = "Stormcaller Supercharge", Tooltip = "Activates Stormcallers Supercharge skill that takes away health while boosting your own damage and healing you a little when inflicting the Supercharge status\nTries to work on any class", Tab = SecondTab },
     { "CrusaderBuffToggle", Text = "Crusader buffs", Tooltip = "Fires the Crusader Rally and Armament skills again every time they come off cooldown\nTries to work on any class", Tab = SecondTab },
-    { "HunterFrenzyToggle", Text = "Hunter Frenzy", Tooltip = "Fires the Hunter Frenzy skill every few seconds\nTries to work on any class", Tab = SecondTab },
-    { "PaladinGuildedLightToggle", Text = "Paladin Gilded Light", Tooltip = "Fires the Paladin Gilded Light skill every few seconds\nTries to work on any class", Tab = SecondTab },
+    { "PaladinGuildedLightToggle", Text = "Paladin Gilded Light", Tooltip = "Fires the Paladin Gilded Light skill every few seconds\nTested to work on a Paladin, other classes untested", Tab = SecondTab },
 })
 
 local RangedClassLabel = FirstTab:AddLabel("Ranged class distance", false)
@@ -16212,7 +16213,7 @@ Library.QueueAutoExecute=function()
     if type(queue)~="function" then Library:Notify("Your executor does not support queue_on_teleport",5) return end
     local url=Library.Options.AutoExecuteURL and Library.Options.AutoExecuteURL.Value
     if type(url)~="string" or url:sub(1,8)~="https://" then Library:Notify("Auto execute URL must start with https://",5) return end
-    queue(string.format('local f="LarpZeroProfiles/autoexec_off.txt" if type(isfile)=="function" and isfile(f) then return end loadstring(game:HttpGet(%q))()',url))
+    queue(string.format('local f="LarpZeroProfiles/autoexec_off.txt" if type(isfile)=="function" and isfile(f) then return end getgenv().LarpZeroAutoHide=true loadstring(game:HttpGet(%q))()',url))
 end
 Library.SetAutoExecuteFlag=function(enabled)
     pcall(function()
@@ -16259,6 +16260,11 @@ task.spawn(function()
             ISV.PlayerPrestige=LocalPlayer:GetAttribute("Prestige")
             SV.Parties=ReplicatedStorage:FindFirstChild("Parties")
             LoadLocalProfile()
+            task.wait(0.5)
+            if (Library.Toggles.HideGuiToggle and Library.Toggles.HideGuiToggle.Value) or (getgenv and getgenv().LarpZeroAutoHide) then
+                pcall(function() Library:Toggle(false) end)
+            end
+            if getgenv then getgenv().LarpZeroAutoHide = nil end
             return
         end
         task.wait(0.25)
@@ -17149,7 +17155,8 @@ if not IsMainMenu then
             end)
         end)
     end
-    SV.RunRemoteBuff("HunterFrenzyToggle", "Skillset_Hunter_Frenzy", 5)
+    SV.RunRemoteBuff("AttackBuffOnlyToggle", "Skillset_DualWielder_AttackBuff", 1)
+    SV.RunRemoteBuff("AggroDrawOnlyToggle", "Skillset_Guardian_AggroDraw", 1)
     SV.RunRemoteBuff("PaladinGuildedLightToggle", "Skillset_Paladin_GuildedLight", 5)
     local MolBuff
     Toggles.MoLBarrierToggle:OnChanged(function(ChangedValue)
@@ -18904,8 +18911,8 @@ if not ISV.IsMobile and EF.HideGui and not SV.BadExecutor then
 end
 
 SetGlobal("toggle menu")
-if Toggles.HideGuiToggle.Value then
-    Library:Toggle()
+if Toggles.HideGuiToggle.Value or (getgenv and getgenv().LarpZeroAutoHide) then
+    Library:Toggle(false)
 end
 
 SetGlobal("leaderboard info set up")
