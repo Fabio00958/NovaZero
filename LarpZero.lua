@@ -15232,6 +15232,22 @@ CreateToggles({
     { "CrusaderBuffToggle", Text = "Crusader buffs", Tooltip = "Fires the Crusader Rally and Armament skills again every time they come off cooldown\nTries to work on any class", Tab = SecondTab },
     { "HunterFrenzyToggle", Text = "Hunter Frenzy", Tooltip = "Fires the Hunter Frenzy skill every few seconds\nTries to work on any class", Tab = SecondTab },
     { "PaladinGuildedLightToggle", Text = "Paladin Gilded Light", Tooltip = "Fires the Paladin Gilded Light skill every few seconds\nTries to work on any class", Tab = SecondTab },
+    { "AutoTrickShotToggle", Text = "Auto Trick Shot", Tooltip = "Saat diam: backflip (dodge) lalu langsung menembak otomatis ke musuh terdekat\nUntuk class Archer/ranged", Tab = SecondTab },
+})
+
+SecondTab:AddSlider("TrickShotShootDelay", {
+    Text = "Trick Shot shoot delay",
+    Default = 0.15, Min = 0, Max = 1, Rounding = 2, Compact = true,
+    Tooltip = "Jeda setelah backflip sebelum menembak (detik).\nSesuaikan sampai muncul efek perfect Trick Shot"
+})
+SecondTab:AddSlider("TrickShotCooldown", {
+    Text = "Trick Shot cooldown",
+    Default = 1.5, Min = 0.5, Max = 6, Rounding = 1, Compact = true,
+    Tooltip = "Jeda antar Trick Shot (detik)"
+})
+SecondTab:AddInput("TrickShotDodgeName", {
+    Text = "Dodge skill name", Default = "Dodge", Finished = true,
+    Tooltip = "Nama skill backflip di Actions (default: Dodge)"
 })
 
 local RangedClassLabel = FirstTab:AddLabel("Ranged class distance", false)
@@ -17151,6 +17167,51 @@ if not IsMainMenu then
     end
     SV.RunRemoteBuff("HunterFrenzyToggle", "Skillset_Hunter_Frenzy", 5)
     SV.RunRemoteBuff("PaladinGuildedLightToggle", "Skillset_Paladin_GuildedLight", 5)
+    SV.TrickShotGeneration = 0
+    Toggles.AutoTrickShotToggle:OnChanged(function(enabled)
+        SV.TrickShotGeneration = SV.TrickShotGeneration + 1
+        local generation = SV.TrickShotGeneration
+        if not enabled then return end
+        if SV.SafeMode and not IsDungeon then
+            Toggles.AutoTrickShotToggle:SetValue(false)
+            return
+        end
+        if not SV.CanRequire then
+            Toggles.AutoTrickShotToggle:SetValue(false)
+            Library:Notify("Auto Trick Shot butuh executor yang support require", 5)
+            return
+        end
+        local ok, Actions = pcall(function() return require(Client:WaitForChild("Actions", 10)) end)
+        if not ok or type(Actions) ~= "table" or type(Actions.UseSkill) ~= "function" then
+            Toggles.AutoTrickShotToggle:SetValue(false)
+            Library:Notify("Actions module tidak ditemukan", 4)
+            return
+        end
+        task.spawn(function()
+            while generation == SV.TrickShotGeneration and not KillSwitch
+                and not ScriptUnloaded and Toggles.AutoTrickShotToggle.Value do
+                local character = LocalPlayer.Character
+                local health = character and character:FindFirstChild("HealthProperties")
+                health = health and health:FindFirstChild("Health")
+                local root = character and character:FindFirstChild("HumanoidRootPart")
+                local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+                if health and health.Value > 0 and root and humanoid and CurrentMob then
+                    local horizontal = Vector3.new(root.AssemblyLinearVelocity.X, 0, root.AssemblyLinearVelocity.Z).Magnitude
+                    local standingStill = humanoid.MoveDirection.Magnitude == 0 and horizontal < 2
+                    if standingStill then
+                        pcall(function() Actions:UseSkill(Options.TrickShotDodgeName.Value ~= "" and Options.TrickShotDodgeName.Value or "Dodge") end)
+                        task.wait(Options.TrickShotShootDelay.Value)
+                        for _ = 1, 3 do
+                            pcall(function() Actions:UseSkill("Primary") end)
+                            task.wait(0.05)
+                        end
+                        task.wait(Options.TrickShotCooldown.Value)
+                    end
+                end
+                task.wait(0.1)
+            end
+        end)
+    end)
     local MolBuff
     Toggles.MoLBarrierToggle:OnChanged(function(ChangedValue)
         if ChangedValue and SV.SafeMode and not IsDungeon then
