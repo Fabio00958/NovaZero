@@ -15233,6 +15233,7 @@ CreateToggles({
     { "StormcallerSuperchargeToggle", Text = "Stormcaller Supercharge", Tooltip = "Activates Stormcallers Supercharge skill that takes away health while boosting your own damage and healing you a little when inflicting the Supercharge status\nTries to work on any class", Tab = SecondTab },
     { "CrusaderBuffToggle", Text = "Crusader buffs", Tooltip = "Fires the Crusader Rally and Armament skills again every time they come off cooldown\nTries to work on any class", Tab = SecondTab },
     { "PaladinGuildedLightToggle", Text = "Paladin Gilded Light", Tooltip = "Fires the Paladin Gilded Light skill every few seconds\nTested to work on a Paladin, other classes untested", Tab = SecondTab },
+    { "AutoTrickShotToggle", Text = "Auto Trick Shot (C)", Tooltip = "Hunter only. Presses the C key about every 3 seconds while Killaura or Autofarm is running\nUses the real dodge input, which is what triggers Trick Shot", Tab = SecondTab },
 })
 
 local RangedClassLabel = FirstTab:AddLabel("Ranged class distance", false)
@@ -17158,6 +17159,41 @@ if not IsMainMenu then
     SV.RunRemoteBuff("AttackBuffOnlyToggle", "Skillset_DualWielder_AttackBuff", 1)
     SV.RunRemoteBuff("AggroDrawOnlyToggle", "Skillset_Guardian_AggroDraw", 1)
     SV.RunRemoteBuff("PaladinGuildedLightToggle", "Skillset_Paladin_GuildedLight", 5)
+    SV.TrickShotGeneration = 0
+    Toggles.AutoTrickShotToggle:OnChanged(function(enabled)
+        SV.TrickShotGeneration = SV.TrickShotGeneration + 1
+        local generation = SV.TrickShotGeneration
+        if not enabled then return end
+        if LocalPlayer:GetAttribute("Class") ~= "Hunter" then
+            Toggles.AutoTrickShotToggle:SetValue(false)
+            Library:Notify("Auto Trick Shot is meant for Hunter only", 4)
+            return
+        end
+        task.spawn(function()
+            local ok, vim = pcall(function() return game:GetService("VirtualInputManager") end)
+            if not ok or not vim then
+                Toggles.AutoTrickShotToggle:SetValue(false)
+                Library:Notify("Key press simulation is not supported here", 5)
+                return
+            end
+            while generation == SV.TrickShotGeneration and not KillSwitch
+                and not ScriptUnloaded and Toggles.AutoTrickShotToggle.Value do
+                if SV.Killaura then
+                    local pressed = pcall(function()
+                        vim:SendKeyEvent(true, Enum.KeyCode.C, false, game)
+                        task.wait(0.05)
+                        vim:SendKeyEvent(false, Enum.KeyCode.C, false, game)
+                    end)
+                    if not pressed then
+                        Toggles.AutoTrickShotToggle:SetValue(false)
+                        Library:Notify("Key press failed, Auto Trick Shot turned off", 5)
+                        return
+                    end
+                end
+                task.wait(3.2)
+            end
+        end)
+    end)
     local MolBuff
     Toggles.MoLBarrierToggle:OnChanged(function(ChangedValue)
         if ChangedValue and SV.SafeMode and not IsDungeon then
