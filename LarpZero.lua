@@ -15232,7 +15232,6 @@ CreateToggles({
     { "CrusaderBuffToggle", Text = "Crusader buffs", Tooltip = "Fires the Crusader Rally and Armament skills again every time they come off cooldown\nTries to work on any class", Tab = SecondTab },
     { "HunterFrenzyToggle", Text = "Hunter Frenzy", Tooltip = "Fires the Hunter Frenzy skill every few seconds\nTries to work on any class", Tab = SecondTab },
     { "PaladinGuildedLightToggle", Text = "Paladin Gilded Light", Tooltip = "Fires the Paladin Gilded Light skill every few seconds\nTries to work on any class", Tab = SecondTab },
-    { "AutoTrickShotToggle", Text = "Auto Trick Shot (C)", Tooltip = "Hunter only. Presses the C key about every 3 seconds while Killaura or Autofarm is running\nUses the real dodge input, which is what triggers Trick Shot", Tab = SecondTab },
 })
 
 local RangedClassLabel = FirstTab:AddLabel("Ranged class distance", false)
@@ -16208,14 +16207,12 @@ end -- for unloaded miscellaneous
 local ConfigTab=Window:AddTab({Name="Configurations"})
 local cleanSettings=ConfigTab:AddLeftGroupbox("Main")
 cleanSettings:AddToggle("HideGuiToggle",{Text="Hide menu when executed",Default=false})
-cleanSettings:AddSlider("HideMenuDelay",{Text="Hide menu delay",Suffix=" s",Default=0,Min=0,Max=30,Rounding=0,
-    Tooltip="Seconds to wait after your saved config finishes loading before the menu hides\nOnly used when Hide menu when executed is on"})
 Library.QueueAutoExecute=function()
     local queue=queue_on_teleport or queueonteleport or (syn and syn.queue_on_teleport)
     if type(queue)~="function" then Library:Notify("Your executor does not support queue_on_teleport",5) return end
     local url=Library.Options.AutoExecuteURL and Library.Options.AutoExecuteURL.Value
     if type(url)~="string" or url:sub(1,8)~="https://" then Library:Notify("Auto execute URL must start with https://",5) return end
-    queue(string.format('local f="LarpZeroProfiles/autoexec_off.txt" if type(isfile)=="function" and isfile(f) then return end getgenv().LarpZeroAutoHide=true loadstring(game:HttpGet(%q))()',url))
+    queue(string.format('local f="LarpZeroProfiles/autoexec_off.txt" if type(isfile)=="function" and isfile(f) then return end loadstring(game:HttpGet(%q))()',url))
 end
 Library.SetAutoExecuteFlag=function(enabled)
     pcall(function()
@@ -16262,13 +16259,6 @@ task.spawn(function()
             ISV.PlayerPrestige=LocalPlayer:GetAttribute("Prestige")
             SV.Parties=ReplicatedStorage:FindFirstChild("Parties")
             LoadLocalProfile()
-            task.wait(1)
-            if (Library.Toggles.HideGuiToggle and Library.Toggles.HideGuiToggle.Value) or (getgenv and getgenv().LarpZeroAutoHide) then
-                local hideDelay = Library.Options.HideMenuDelay and Library.Options.HideMenuDelay.Value or 0
-                if hideDelay > 0 then task.wait(hideDelay) end
-                pcall(function() Library:Toggle(false) end)
-            end
-            if getgenv then getgenv().LarpZeroAutoHide = nil end
             return
         end
         task.wait(0.25)
@@ -17161,41 +17151,6 @@ if not IsMainMenu then
     end
     SV.RunRemoteBuff("HunterFrenzyToggle", "Skillset_Hunter_Frenzy", 5)
     SV.RunRemoteBuff("PaladinGuildedLightToggle", "Skillset_Paladin_GuildedLight", 5)
-    SV.TrickShotGeneration = 0
-    Toggles.AutoTrickShotToggle:OnChanged(function(enabled)
-        SV.TrickShotGeneration = SV.TrickShotGeneration + 1
-        local generation = SV.TrickShotGeneration
-        if not enabled then return end
-        if LocalPlayer:GetAttribute("Class") ~= "Hunter" then
-            Toggles.AutoTrickShotToggle:SetValue(false)
-            Library:Notify("Auto Trick Shot is meant for Hunter only", 4)
-            return
-        end
-        task.spawn(function()
-            local ok, vim = pcall(function() return game:GetService("VirtualInputManager") end)
-            if not ok or not vim then
-                Toggles.AutoTrickShotToggle:SetValue(false)
-                Library:Notify("Key press simulation is not supported here", 5)
-                return
-            end
-            while generation == SV.TrickShotGeneration and not KillSwitch
-                and not ScriptUnloaded and Toggles.AutoTrickShotToggle.Value do
-                if SV.Killaura then
-                    local pressed = pcall(function()
-                        vim:SendKeyEvent(true, Enum.KeyCode.C, false, game)
-                        task.wait(0.05)
-                        vim:SendKeyEvent(false, Enum.KeyCode.C, false, game)
-                    end)
-                    if not pressed then
-                        Toggles.AutoTrickShotToggle:SetValue(false)
-                        Library:Notify("Key press failed, Auto Trick Shot turned off", 5)
-                        return
-                    end
-                end
-                task.wait(3.2)
-            end
-        end)
-    end)
     local MolBuff
     Toggles.MoLBarrierToggle:OnChanged(function(ChangedValue)
         if ChangedValue and SV.SafeMode and not IsDungeon then
@@ -18949,8 +18904,8 @@ if not ISV.IsMobile and EF.HideGui and not SV.BadExecutor then
 end
 
 SetGlobal("toggle menu")
-if Toggles.HideGuiToggle.Value or (getgenv and getgenv().LarpZeroAutoHide) then
-    Library:Toggle(false)
+if Toggles.HideGuiToggle.Value then
+    Library:Toggle()
 end
 
 SetGlobal("leaderboard info set up")
