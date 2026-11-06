@@ -15226,13 +15226,12 @@ RightTab = ClassTab:AddRightTabbox("Right Tabbox")
 
 CreateToggles({
     { "GeneralClassBuffToggle", Text = "General class buffs", Tooltip = "Gives you Dual Wielders and Guardians buff", Tab = FirstTab },
-    { "AttackBuffOnlyToggle", Text = "Attack buff only", Tooltip = "Only the Dual Wielder attack buff from General class buffs, fired every second\nUse this to test which general buff actually helps", Tab = FirstTab },
-    { "AggroDrawOnlyToggle", Text = "Aggro draw only", Tooltip = "Only the Guardian aggro draw from General class buffs, fired every second\nUse this to test which general buff actually helps", Tab = FirstTab },
     { "MoLBarrierToggle", Text = "MoL barrier", Tooltip = "Gives everyone else in the game a barrier instead of only yourself\nTries to work on any class", Tab = SecondTab },
     { "DemonBloodBindingToggle", Text = "Demon Blood Binding", Tooltip = "Activates Demons Blood Binding skill that takes away health while boosting your own damage\nTries to work on any class", Tab = SecondTab },
     { "StormcallerSuperchargeToggle", Text = "Stormcaller Supercharge", Tooltip = "Activates Stormcallers Supercharge skill that takes away health while boosting your own damage and healing you a little when inflicting the Supercharge status\nTries to work on any class", Tab = SecondTab },
     { "CrusaderBuffToggle", Text = "Crusader buffs", Tooltip = "Fires the Crusader Rally and Armament skills again every time they come off cooldown\nTries to work on any class", Tab = SecondTab },
-    { "PaladinGuildedLightToggle", Text = "Paladin Gilded Light", Tooltip = "Fires the Paladin Gilded Light skill every few seconds\nTested to work on a Paladin, other classes untested", Tab = SecondTab },
+    { "HunterFrenzyToggle", Text = "Hunter Frenzy", Tooltip = "Fires the Hunter Frenzy skill every few seconds\nTries to work on any class", Tab = SecondTab },
+    { "PaladinGuildedLightToggle", Text = "Paladin Gilded Light", Tooltip = "Fires the Paladin Gilded Light skill every few seconds\nTries to work on any class", Tab = SecondTab },
     { "AutoTrickShotToggle", Text = "Auto Trick Shot (C)", Tooltip = "Hunter only. Presses the C key about every 3 seconds while Killaura or Autofarm is running\nUses the real dodge input, which is what triggers Trick Shot", Tab = SecondTab },
 })
 
@@ -16209,6 +16208,8 @@ end -- for unloaded miscellaneous
 local ConfigTab=Window:AddTab({Name="Configurations"})
 local cleanSettings=ConfigTab:AddLeftGroupbox("Main")
 cleanSettings:AddToggle("HideGuiToggle",{Text="Hide menu when executed",Default=false})
+cleanSettings:AddSlider("HideMenuDelay",{Text="Hide menu delay",Suffix=" s",Default=0,Min=0,Max=30,Rounding=0,
+    Tooltip="Seconds to wait after your saved config finishes loading before the menu hides\nOnly used when Hide menu when executed is on"})
 Library.QueueAutoExecute=function()
     local queue=queue_on_teleport or queueonteleport or (syn and syn.queue_on_teleport)
     if type(queue)~="function" then Library:Notify("Your executor does not support queue_on_teleport",5) return end
@@ -16261,8 +16262,10 @@ task.spawn(function()
             ISV.PlayerPrestige=LocalPlayer:GetAttribute("Prestige")
             SV.Parties=ReplicatedStorage:FindFirstChild("Parties")
             LoadLocalProfile()
-            task.wait(0.5)
+            task.wait(1)
             if (Library.Toggles.HideGuiToggle and Library.Toggles.HideGuiToggle.Value) or (getgenv and getgenv().LarpZeroAutoHide) then
+                local hideDelay = Library.Options.HideMenuDelay and Library.Options.HideMenuDelay.Value or 0
+                if hideDelay > 0 then task.wait(hideDelay) end
                 pcall(function() Library:Toggle(false) end)
             end
             if getgenv then getgenv().LarpZeroAutoHide = nil end
@@ -17156,8 +17159,7 @@ if not IsMainMenu then
             end)
         end)
     end
-    SV.RunRemoteBuff("AttackBuffOnlyToggle", "Skillset_DualWielder_AttackBuff", 1)
-    SV.RunRemoteBuff("AggroDrawOnlyToggle", "Skillset_Guardian_AggroDraw", 1)
+    SV.RunRemoteBuff("HunterFrenzyToggle", "Skillset_Hunter_Frenzy", 5)
     SV.RunRemoteBuff("PaladinGuildedLightToggle", "Skillset_Paladin_GuildedLight", 5)
     SV.TrickShotGeneration = 0
     Toggles.AutoTrickShotToggle:OnChanged(function(enabled)
