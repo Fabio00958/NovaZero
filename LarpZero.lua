@@ -15238,6 +15238,7 @@ CreateToggles({
     { "MoLBarrierToggle", Text = "MoL barrier", Tooltip = "Gives everyone else in the game a barrier instead of only yourself\nTries to work on any class", Tab = SecondTab },
     { "DemonBloodBindingToggle", Text = "Demon Blood Binding", Tooltip = "Activates Demons Blood Binding skill that takes away health while boosting your own damage\nTries to work on any class", Tab = SecondTab },
     { "StormcallerSuperchargeToggle", Text = "Stormcaller Supercharge", Tooltip = "Activates Stormcallers Supercharge skill that takes away health while boosting your own damage and healing you a little when inflicting the Supercharge status\nTries to work on any class", Tab = SecondTab },
+    { "CrusaderBuffToggle", Text = "Crusader buffs", Tooltip = "Fires the Crusader Rally and Armament skills again every time they come off cooldown\nTries to work on any class", Tab = SecondTab },
 })
 
 local RangedClassLabel = FirstTab:AddLabel("Ranged class distance", false)
@@ -17092,6 +17093,40 @@ if not IsMainMenu then
                     pcall(function() defense:FireServer() end)
                 end
                 task.wait(1)
+            end
+        end)
+    end)
+    SV.CrusaderBuffGeneration = 0
+    Toggles.CrusaderBuffToggle:OnChanged(function(enabled)
+        SV.CrusaderBuffGeneration = SV.CrusaderBuffGeneration + 1
+        local generation = SV.CrusaderBuffGeneration
+        if not enabled then return end
+        local rally = Remotes:FindFirstChild("Skillset_Crusader_Rally")
+        local armament = Remotes:FindFirstChild("Skillset_Crusader_Armament")
+        if not rally and not armament then
+            Toggles.CrusaderBuffToggle:SetValue(false)
+            Library:Notify("Crusader buff interface unavailable", 4)
+            return
+        end
+        task.spawn(function()
+            local lastRally, lastArmament = 0, 0
+            while generation == SV.CrusaderBuffGeneration and not KillSwitch
+                and not ScriptUnloaded and Toggles.CrusaderBuffToggle.Value do
+                local character = LocalPlayer.Character
+                local health = character and character:FindFirstChild("HealthProperties")
+                health = health and health:FindFirstChild("Health")
+                if health and health.Value > 0 then
+                    local now = os.clock()
+                    if rally and now - lastRally >= 6.2 then
+                        lastRally = now
+                        pcall(function() rally:FireServer() end)
+                    end
+                    if armament and now - lastArmament >= 11.2 then
+                        lastArmament = now
+                        pcall(function() armament:FireServer() end)
+                    end
+                end
+                task.wait(0.5)
             end
         end)
     end)
