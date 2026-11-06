@@ -15226,6 +15226,8 @@ RightTab = ClassTab:AddRightTabbox("Right Tabbox")
 
 CreateToggles({
     { "GeneralClassBuffToggle", Text = "General class buffs", Tooltip = "Gives you Dual Wielders and Guardians buff", Tab = FirstTab },
+    { "AttackBuffOnlyToggle", Text = "Attack buff only", Tooltip = "Only the Dual Wielder attack buff from General class buffs, fired every second\nUse this to test which general buff actually helps", Tab = FirstTab },
+    { "AggroDrawOnlyToggle", Text = "Aggro draw only", Tooltip = "Only the Guardian aggro draw from General class buffs, fired every second\nUse this to test which general buff actually helps", Tab = FirstTab },
     { "MoLBarrierToggle", Text = "MoL barrier", Tooltip = "Gives everyone else in the game a barrier instead of only yourself\nTries to work on any class", Tab = SecondTab },
     { "DemonBloodBindingToggle", Text = "Demon Blood Binding", Tooltip = "Activates Demons Blood Binding skill that takes away health while boosting your own damage\nTries to work on any class", Tab = SecondTab },
     { "StormcallerSuperchargeToggle", Text = "Stormcaller Supercharge", Tooltip = "Activates Stormcallers Supercharge skill that takes away health while boosting your own damage and healing you a little when inflicting the Supercharge status\nTries to work on any class", Tab = SecondTab },
@@ -17151,6 +17153,8 @@ if not IsMainMenu then
     end
     SV.RunRemoteBuff("HunterFrenzyToggle", "Skillset_Hunter_Frenzy", 5)
     SV.RunRemoteBuff("PaladinGuildedLightToggle", "Skillset_Paladin_GuildedLight", 5)
+    SV.RunRemoteBuff("AttackBuffOnlyToggle", "Skillset_DualWielder_AttackBuff", 1)
+    SV.RunRemoteBuff("AggroDrawOnlyToggle", "Skillset_Guardian_AggroDraw", 1)
     local MolBuff
     Toggles.MoLBarrierToggle:OnChanged(function(ChangedValue)
         if ChangedValue and SV.SafeMode and not IsDungeon then
