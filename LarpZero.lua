@@ -14432,15 +14432,6 @@ local GenTab = Window:AddTab({
     Name = "General",
     Icon = "rbxassetid://9671045892"
 })
-if IsMainMenu or IsWorld then
-    GenTab:UpdateWarningBox({
-        Title = "Warning",
-        Text = "Safe Mode blocks combat and autofarm outside dungeons. Switch TOGGLE SAFE MODE off to allow world farming.",
-        IsNormal = false,
-        Visible = true,
-        LockSize = true
-    })
-end
 local LeftTab = GenTab:AddLeftTabbox("Left Tabbox")
     local FirstTab = LeftTab:AddTab("Main")
     local SecondTab = LeftTab:AddTab("Settings")
@@ -15239,6 +15230,8 @@ CreateToggles({
     { "DemonBloodBindingToggle", Text = "Demon Blood Binding", Tooltip = "Activates Demons Blood Binding skill that takes away health while boosting your own damage\nTries to work on any class", Tab = SecondTab },
     { "StormcallerSuperchargeToggle", Text = "Stormcaller Supercharge", Tooltip = "Activates Stormcallers Supercharge skill that takes away health while boosting your own damage and healing you a little when inflicting the Supercharge status\nTries to work on any class", Tab = SecondTab },
     { "CrusaderBuffToggle", Text = "Crusader buffs", Tooltip = "Fires the Crusader Rally and Armament skills again every time they come off cooldown\nTries to work on any class", Tab = SecondTab },
+    { "HunterFrenzyToggle", Text = "Hunter Frenzy", Tooltip = "Fires the Hunter Frenzy skill every few seconds\nTries to work on any class", Tab = SecondTab },
+    { "PaladinGuildedLightToggle", Text = "Paladin Gilded Light", Tooltip = "Fires the Paladin Gilded Light skill every few seconds\nTries to work on any class", Tab = SecondTab },
 })
 
 local RangedClassLabel = FirstTab:AddLabel("Ranged class distance", false)
@@ -17130,6 +17123,34 @@ if not IsMainMenu then
             end
         end)
     end)
+    SV.BuffLoopGeneration = {}
+    SV.RunRemoteBuff = function(toggleName, remoteName, interval)
+        Toggles[toggleName]:OnChanged(function(enabled)
+            SV.BuffLoopGeneration[toggleName] = (SV.BuffLoopGeneration[toggleName] or 0) + 1
+            local generation = SV.BuffLoopGeneration[toggleName]
+            if not enabled then return end
+            local remote = Remotes:FindFirstChild(remoteName)
+            if not remote then
+                Toggles[toggleName]:SetValue(false)
+                Library:Notify("Buff interface unavailable", 4)
+                return
+            end
+            task.spawn(function()
+                while generation == SV.BuffLoopGeneration[toggleName] and not KillSwitch
+                    and not ScriptUnloaded and Toggles[toggleName].Value do
+                    local character = LocalPlayer.Character
+                    local health = character and character:FindFirstChild("HealthProperties")
+                    health = health and health:FindFirstChild("Health")
+                    if health and health.Value > 0 then
+                        pcall(function() remote:FireServer() end)
+                    end
+                    task.wait(interval)
+                end
+            end)
+        end)
+    end
+    SV.RunRemoteBuff("HunterFrenzyToggle", "Skillset_Hunter_Frenzy", 5)
+    SV.RunRemoteBuff("PaladinGuildedLightToggle", "Skillset_Paladin_GuildedLight", 5)
     local MolBuff
     Toggles.MoLBarrierToggle:OnChanged(function(ChangedValue)
         if ChangedValue and SV.SafeMode and not IsDungeon then
