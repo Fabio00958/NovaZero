@@ -12249,7 +12249,7 @@ local Options
 local Toggles
 local ScriptUnloaded
 local SV = {}
-SV.SafeMode = true
+SV.SafeMode = false
 SV.Drops = {}
 local ISV = {}
 ISV.MobTable = {}
@@ -14493,12 +14493,6 @@ local function ApplySafeMode(enabled)
     end
 end
 SV.RefreshSafeMode=ApplySafeMode
-FirstTab:AddToggle("SafeModeToggle", {
-    Text = "TOGGLE SAFE MODE",
-    Default = true,
-    Tooltip = "Block combat and autofarm outside dungeons.",
-    Callback = ApplySafeMode
-})
 
 CreateToggles({
     { "KillauraToggle", Text = "Killaura", Tab = FirstTab, AttachedFunction = ToggleSafeKillaura },
@@ -14509,7 +14503,7 @@ CreateToggles({
     { "RestartStuckToggle", Text = "Rejoin if stuck", Tooltip = "if you stop doing damage for a long enough period of time this toggle will assume you're stuck and attempt to restart the dungeon.", Tab = ThirdTab },
     { "DodgeLethalToggle", Text = "Dodge lethal damage", Tooltip = "Melee classes only. Some attacks may automatically be dodged even when turned off.", Tab = ThirdTab },
 })
-ApplySafeMode(true)
+ApplySafeMode(false)
 SecondTab:AddLabel("Account for ping", true)
 SecondTab:AddSlider("PingSlider", {
     Text = "Ping",
