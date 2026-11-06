@@ -15235,6 +15235,10 @@ CreateToggles({
     { "AutoTrickShotToggle", Text = "Auto Trick Shot", Tooltip = "Saat diam: backflip (dodge) lalu langsung menembak otomatis ke musuh terdekat\nUntuk class Archer/ranged", Tab = SecondTab },
 })
 
+SecondTab:AddToggle("TrickShotAllowMoving", {
+    Text = "Trick Shot: tetap dodge saat bergerak", Default = false,
+    Tooltip = "Aktif: dodge + tembak otomatis walau sedang lari (bonus Trick Shot sendiri hanya muncul kalau diam)"
+})
 SecondTab:AddSlider("TrickShotShootDelay", {
     Text = "Trick Shot shoot delay",
     Default = 0.15, Min = 0, Max = 1, Rounding = 2, Compact = true,
@@ -17197,7 +17201,7 @@ if not IsMainMenu then
                 local humanoid = character and character:FindFirstChildOfClass("Humanoid")
                 if health and health.Value > 0 and root and humanoid and CurrentMob then
                     local horizontal = Vector3.new(root.AssemblyLinearVelocity.X, 0, root.AssemblyLinearVelocity.Z).Magnitude
-                    local standingStill = humanoid.MoveDirection.Magnitude == 0 and horizontal < 2
+                    local standingStill = Toggles.TrickShotAllowMoving.Value or (humanoid.MoveDirection.Magnitude == 0 and horizontal < 2)
                     if standingStill then
                         pcall(function() Actions:UseSkill(Options.TrickShotDodgeName.Value ~= "" and Options.TrickShotDodgeName.Value or "Dodge") end)
                         task.wait(Options.TrickShotShootDelay.Value)
